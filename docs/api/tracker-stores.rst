@@ -60,7 +60,7 @@ SQLTrackerStore
             rasa run -m models --endpoints endpoints.yml
 :Parameters:
     - ``domain`` (default: ``None``): Domain object associated with this tracker store
-    - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  Consult the `SQLAlchemy docs <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_ for available dialects. 
+    - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  Consult the `SQLAlchemy docs <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_ for available dialects.
     - ``host`` (default: ``None``): URL of your SQL server
     - ``port`` (default: ``None``): Port of your SQL server
     - ``db`` (default: ``rasa.db``): The path to the database to be used
@@ -144,6 +144,39 @@ MongoTrackerStore
     - ``collection`` (default: ``conversations``): The collection name which is
       used to store the conversations
     - ``auth_source`` (default: ``admin``): database name associated with the user’s credentials.
+
+CouchTrackerStore
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    `CouchTrackerStore` can be used to store the conversation history in `Couchbase <https://www.couchbase.com/>`_.
+    Couchbase provides an enterprise-class, multicloud to edge database that offers the robust capabilities required for business-critical applications on a highly scalable and available platform.
+
+:Configuration:
+    1. Start your Couchbase instance.
+    2. Add required configuration to your `endpoints.yml`
+
+        .. code-block:: yaml
+
+            tracker_store:
+                type: couch
+                url: <url to your mongo instance, e.g. couchbase://localhost:8091>
+                db: <name of the bucket within your couchbase instance, e.g. rasabucket>
+                username: <username used for authentication>
+                password: <password used for authentication>
+
+    3. To start the Rasa Core server using your configured Couch instance,
+           add the :code:`--endpoints` flag, e.g.:
+
+            .. code-block:: bash
+
+                rasa run -m models --endpoints endpoints.yml
+:Parameters:
+    - ``url`` (default: ``couchbase://localhost:8091``): URL of your MongoDB
+    - ``db`` (default: ``rasabucket``): The database name which should be used
+    - ``username`` (default: ``None``): The username which is used for authentication
+    - ``password`` (default: ``None``): The password which is used for authentication
+
 
 Custom Tracker Store
 ~~~~~~~~~~~~~~~~~~~~

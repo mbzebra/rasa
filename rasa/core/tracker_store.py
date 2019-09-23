@@ -65,6 +65,10 @@ class TrackerStore(object):
             tracker_store = DynamoTrackerStore(
                 domain=domain, event_broker=event_broker, **store.kwargs
             )
+        elif store.type.lower() == "couch":
+            tracker_store = CouchTrackerStore(
+                domain=domain, url=store.url, event_broker=event_broker, **store.kwargs
+            )
         else:
             tracker_store = TrackerStore.load_tracker_from_module_string(domain, store)
 
@@ -170,6 +174,75 @@ class TrackerStore(object):
             return tracker
         else:
             return None
+
+
+class CouchTrackerStore(TrackerStore):
+    """Stores conversation history in memory"""
+
+    def __init__(
+        self,
+        domain,
+        url="couchbase://localhost:8091",
+        db="rasabucket",
+        username=None,
+        password=None,
+        event_broker=None,
+        record_exp=None,
+    ):
+
+        from couchbase.cluster import Cluster
+        from couchbase.cluster import PasswordAuthenticator
+
+        cluster = Cluster(url)
+        authenticator = PasswordAuthenticator(username, password)
+        cluster.authenticate(authenticator)
+        self.cb = cluster.open_bucket(db)
+        self._ensure_indices()
+
+        super(CouchTrackerStore, self).__init__(domain, event_broker)
+
+    def _ensure_indices(self):
+        """Create an index on the sender_id"""
+        # print('self bucket', self.cb.bucket)
+        # create_index = 'CREATE PRIMARY INDEX on ' + self.cb.bucket
+        # self.cb.n1ql_query(create_index).execute()
+
+    def save(self, tracker, timeout=None):
+        """Saves the current conversation state"""
+        import couchbase
+
+        if self.event_broker:
+            self.stream_events(tracker)
+
+        # if not timeout and self.record_exp:
+        #     timeout = self.record_exp
+
+        state = tracker.current_state(EventVerbosity.ALL)
+
+        self.cb.upsert(tracker.sender_id, {"$set": state}, format=couchbase.FMT_JSON)
+
+    def retrieve(self, sender_id):
+        """
+        Args:
+            sender_id: the message owner ID
+
+        Returns:
+            DialogueStateTracker
+        """
+        stored = self.cb.get(sender_id)
+
+        if stored is not None:
+            return DialogueStateTracker.from_dict(
+                sender_id,
+                json.loads(json.dumps(stored.value))["$set"]["events"],
+                self.domain.slots,
+            )
+        else:
+            return None
+
+    def keys(self) -> Iterable[Text]:
+        """Returns keys of the Couch Tracker Store"""
+        print('Keys of Couch Tracker Requested')
 
 
 class InMemoryTrackerStore(TrackerStore):
