@@ -229,7 +229,12 @@ class CouchTrackerStore(TrackerStore):
         Returns:
             DialogueStateTracker
         """
-        stored = self.cb.get(sender_id)
+        from couchbase.exceptions import CouchbaseError
+        try:
+            stored = self.cb.get(sender_id)
+        except CouchbaseError:
+            return None
+        # need to see if we need to check for sender_id is digit()
 
         if stored is not None:
             return DialogueStateTracker.from_dict(
@@ -237,8 +242,6 @@ class CouchTrackerStore(TrackerStore):
                 json.loads(json.dumps(stored.value))["$set"]["events"],
                 self.domain.slots,
             )
-        else:
-            return None
 
     def keys(self) -> Iterable[Text]:
         """Returns keys of the Couch Tracker Store"""
